@@ -6,7 +6,7 @@ from PyQt5.QtGui import QIcon,QFont       #设置窗口图标和字体
 from PyQt5.QtCore import QCoreApplication   #使用这里面的功能
 from PyQt5 import QtCore
 import sys
-
+import re
 
 url_baidu = 'https://www.baidu.com/s?word='
 host_baidu = 'www.baidu.com'
@@ -42,6 +42,43 @@ class Bing(Visit):
         first = soup.find(name = 'ol',id = 'b_results')
         second = first.find(name = 'a')
         print(second.get('href'))
+#=============================
+class Translate(object):
+    def __init__(self):
+        self.url = 'http://fanyi.youdao.com/translate?smartresult=dict&smartresult=rule'
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87\
+             UBrowser/6.2.3964.2 Safari/537.36',
+            'Host' : 'fanyi.youdao.com',
+            'X-Requested-With': 'XMLHttpRequest',
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+    def isword(self,words):
+        alphabet = 'abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        is_word = True
+        for i in words:
+            if i in alphabet:
+                pass
+            else:
+                is_word = False
+        return is_word
+
+    def translate(self,keyword):
+        self.data = {
+            'i':keyword,
+            'from':'AUTO',
+            'to': 'AUTO',
+            'doctype':'json',
+            'version': '2.1',
+            'keyfrom': 'fanyi.web',
+            'action': 'FY_BY_CLICKBUTTION',
+            'typoResult': 'true',
+        }
+
+        res = requests.post(url = self.url, data= self.data, headers = self.headers)
+        res.encoding = res.apparent_encoding
+        window.text_question.setToolTip(re.findall('"tgt":"(.*)"',res.text)[0])
+
 
 class Window(QWidget):
     QToolTip.setFont(QFont('Microsoft YaHei', 30))
@@ -57,11 +94,11 @@ class Window(QWidget):
         self.setWindowOpacity(65/100)           #窗口透明度
         self.text_question.setFont(QFont('Microsoft YaHei', self.text_question.height()));
         self.text_question.setGeometry(5,15,self.width()-55,60)
-        # self.text_answer = QTextEdit(self)
-        # self.text_answer.setGeometry(0,90,self.width(),400)
+        self.setFixedSize(600, 90)      #固定窗口大小
         self.text_question.returnPressed.connect(self.search)
         self.setWindowTitle('手气不错')
-        self.setGeometry(1950, 400, 600, 90)
+        desktop = QApplication.desktop()
+        self.setGeometry(desktop.width()-self.width(), 400, 600, 90)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.show()
 
@@ -77,6 +114,8 @@ class Window(QWidget):
 
     def changeText(self):
         self.text_question.setText(self.clipboard.text())
+        if translate.isword(self.clipboard.text()):
+            translate.translate(self.clipboard.text())
 
     def addClipbordListener(self):
         self.clipboard = QApplication.clipboard()
@@ -92,23 +131,6 @@ bing = Bing(url_bing,Key_Word='',Host=host_bing)
 
 app = QApplication(sys.argv)
 app.setWindowIcon(QIcon('luckly_icon.png'))
+translate = Translate()
 window = Window()
 sys.exit(app.exec())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
